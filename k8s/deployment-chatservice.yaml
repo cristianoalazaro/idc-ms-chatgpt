@@ -1,6 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
-metadata: 
+metadata:
   name: chatservice-mysql
 spec:
   selector:
@@ -12,51 +12,58 @@ spec:
         app: chatservice-mysql
     spec:
       containers:
-        - name: mysql
-          image: mysql:8
-          ports: 
-          - containerPort: 3306
-          env:
-          - name: MYSQL_ROOT_PASSWORD
-            value: "root"
-          - name: MYSQL_DATABASE
-            value: "chat_service"
+      - name: mysql
+        image: mysql:8
+        ports:
+        - containerPort: 3306
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: "root"
+        - name: MYSQL_DATABASE
+          value: "chat_service"
+        - name: MYSQL_USER
+          value: "admin"
+        - name: MYSQL_PASSWORD
+          value: "admin"
+#Criar um service para expor o banco de dados
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: chatservice-mysql
+  name:  chatservice-mysql
 spec:
-  selector: 
+  selector:
     app: chatservice-mysql
   ports:
   - port: 3306
+  #Como o padrão do type é clusterIP não é necessário informá-lo
   type: ClusterIP
+#Deploy da aplicação
 ---
 apiVersion: apps/v1
 kind: Deployment
-metadata: 
+metadata:
   name: chatservice
-spec: 
+spec:
   selector:
-    matchLabels:
+    matchLabels: 
       app: chatservice
   template:
     metadata:
       labels:
         app: chatservice
-    spec: 
+    spec:
       containers:
         - name: chatservice
-          image: fabricioveronez/imersao-chatservice:v1
+          image: cristianoalazaro/imersao-chatservice:v1
           ports:
           - containerPort: 8080
             name: http
-            protocol: TCP
+            protocol: TCP          
           - containerPort: 50051
             name: grpc
-            protocol: TCP 
-          env: 
+            protocol: TCP
+          env:
           - name: DB_DRIVER
             value: mysql
           - name: DB_HOST
@@ -69,29 +76,32 @@ spec:
             value: chat_service
           - name: DB_PASSWORD
             value: root
+          #Configurações do chatGPT
           - name: WEB_SERVER_PORT
             value: "8080"
           - name: GRPC_SERVER_PORT
-            value: "50051"     
+            value: "50051"
           - name: INITIAL_CHAT_MESSAGE
-            value: "Seu nome é Jarvis. Você é a inteligência artificial da iniciativa DevOps && Cloud. Você da suporte a programadores e profissionais de infraestrutura."
+            value: "Seu nome é Jarvis. Você é a inteligência artificial DE Cristiano Ap Lázaro. Você me dá suporte"
           - name: OPENAI_API_KEY
-            value: {{API_TOKEN}}
+            #value: "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"
+            value: ""
           - name: AUTH_TOKEN
             value: "123456"
+#Criar o service
 ---
 apiVersion: v1
-kind: Service
+kind: Service  
 metadata:
   name: chatservice
-spec: 
-  selector: 
+spec:
+  selector:
     app: chatservice
-  type: ClusterIP
   ports:
-    - port: 8080
-      protocol: TCP
-      name: http
-    - port: 50051
-      protocol: TCP
-      name: grpc
+  - port: 8080
+    protocol: TCP
+    name: http
+  - port: 50051
+    protocol: TCP
+    name: grpc
+  type: ClusterIP       
